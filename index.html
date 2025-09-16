@@ -1,0 +1,885 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weatherwise Crop Selection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdf4;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .btn-primary {
+            background-color: #2c5282;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #2a4365;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2c5282;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-green-50 text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-800"><path d="M2 12B2 7.58172 5.58172 4 10 4H14C18.4183 4 22 7.58172 22 12V13C22 17.4183 18.4183 21 14 21H10C5.58172 21 2 17.4183 2 13V12Z"/><path d="M8 4.5v-2"/><path d="M16 4.5v-2"/><path d="M12 21v-3.5c0-2.2091-1.7909-4-4-4H7"/><path d="M12 21v-3.5c0-2.2091 1.7909-4 4-4h1"/></svg>
+                <h1 class="text-xl font-bold text-gray-800" data-translate="title">Weatherwise Crop Selection</h1>
+            </div>
+            <nav class="flex items-center">
+                <a href="#about" class="text-gray-600 hover:text-blue-800 px-3 py-2" data-translate="nav_about">About</a>
+                <a href="#contact" class="text-gray-600 hover:text-blue-800 px-3 py-2" data-translate="nav_contact">Contact</a>
+                <div class="relative ml-4">
+                    <select id="languageSelector" class="appearance-none bg-white border border-gray-300 rounded-md py-2 pl-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="en">English</option>
+                        <option value="es">Español</option>
+                        <option value="hi">हिन्दी</option>
+                        <option value="fr">Français</option>
+                        <option value="pt">Português</option>
+                        <option value="ar">العربية</option>
+                        <option value="mr">मराठी</option>
+                        <option value="ja">日本語</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 md:p-8">
+
+        <!-- Introduction Section -->
+        <section class="text-center mb-12">
+            <h2 class="text-4xl font-bold text-blue-800 mb-4" data-translate="intro_heading">Empowering Farmers with AI</h2>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto" data-translate="intro_subheading">
+                Make data-driven decisions for your farm. Enter your location to get an AI-powered weather forecast and intelligent crop recommendations tailored to your specific conditions.
+            </p>
+        </section>
+
+        <!-- Location Input -->
+        <div class="card p-6 mb-8 max-w-2xl mx-auto">
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+                <input type="text" id="locationInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter any city or region worldwide...">
+                <button id="getForecastBtn" class="w-full sm:w-auto btn-primary font-semibold px-6 py-2 rounded-lg flex items-center justify-center space-x-2">
+                    <i data-lucide="search"></i>
+                    <span data-translate="get_forecast_btn">Get Forecast</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden">
+            <!-- Loader -->
+            <div id="loader" class="flex justify-center my-8">
+                <div class="loader"></div>
+            </div>
+
+            <!-- Forecast and Recommendations -->
+            <div id="forecastContent" class="hidden">
+                <!-- Weather Forecast -->
+                <section class="mb-12">
+                    <h3 class="text-2xl font-bold text-center mb-6" data-translate="forecast_heading">2-Month AI Weather Forecast for <span id="locationName" class="text-blue-800"></span></h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-center">
+                        <!-- JS will populate this -->
+                    </div>
+                </section>
+
+                <!-- AI Crop Recommendations -->
+                <section>
+                    <h3 class="text-2xl font-bold text-center mb-6" data-translate="recommendations_heading">AI Crop Recommendations</h3>
+                    <div class="grid md:grid-cols-3 gap-8">
+                        
+                        <!-- Recommended -->
+                        <div class="card p-6 border-t-4 border-green-500">
+                            <h4 class="text-xl font-semibold text-green-700 mb-4 flex items-center"><i data-lucide="thumbs-up" class="mr-2"></i><span data-translate="highly_recommended">Highly Recommended</span></h4>
+                            <ul id="recommendedCrops" class="space-y-3">
+                                <!-- JS will populate this -->
+                            </ul>
+                        </div>
+                        
+                        <!-- Consider -->
+                        <div class="card p-6 border-t-4 border-yellow-500">
+                            <h4 class="text-xl font-semibold text-yellow-700 mb-4 flex items-center"><i data-lucide="info" class="mr-2"></i><span data-translate="consider_planting">Consider Planting</span></h4>
+                            <ul id="considerCrops" class="space-y-3">
+                                <!-- JS will populate this -->
+                            </ul>
+                        </div>
+
+                        <!-- Avoid -->
+                        <div class="card p-6 border-t-4 border-red-500">
+                            <h4 class="text-xl font-semibold text-red-700 mb-4 flex items-center"><i data-lucide="thumbs-down" class="mr-2"></i><span data-translate="avoid_planting">Avoid Planting</span></h4>
+                            <ul id="avoidCrops" class="space-y-3">
+                                <!-- JS will populate this -->
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Detailed Crop Info -->
+                <section class="mt-12">
+                    <h3 class="text-2xl font-bold text-center mb-6" data-translate="crop_details_heading">Crop Details</h3>
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="cropDetailsContainer">
+                        <!-- JS will populate this -->
+                    </div>
+                </section>
+
+            </div>
+        </div>
+        
+        <!-- About Section -->
+        <section id="about" class="mt-16 bg-white p-8 rounded-lg shadow-lg">
+             <h2 class="text-3xl font-bold text-center text-blue-800 mb-6" data-translate="how_it_works_heading">How It Works</h2>
+             <div class="flex flex-col md:flex-row items-center gap-8">
+                <div class="md:w-1/2">
+                    <img src="https://placehold.co/600x400/e0e7ff/3730a3?text=AI+Forecasting+Process" alt="Diagram showing data satellites, AI analysis, and crop recommendations on a phone" class="rounded-lg shadow-lg w-full h-auto">
+                </div>
+                <div class="md:w-1/2 space-y-4 text-gray-600">
+                    <p><strong class="text-gray-800" data-translate="how_it_works_step1_title">1. Data Collection:</strong> <span data-translate="how_it_works_step1_desc">Our system gathers vast amounts of meteorological data from global weather satellites, local stations, and historical climate patterns.</span></p>
+                    <p><strong class="text-gray-800" data-translate="how_it_works_step2_title">2. AI Analysis:</strong> <span data-translate="how_it_works_step2_desc">A sophisticated machine learning model analyzes this data to generate highly accurate, localized weather forecasts, predicting temperature, rainfall, humidity, and more with exceptional precision.</span></p>
+                    <p><strong class="text-gray-800" data-translate="how_it_works_step3_title">3. Crop Matching:</strong> <span data-translate="how_it_works_step3_desc">The AI then cross-references the forecast with a comprehensive database of crops, considering their ideal growing conditions, water requirements, and resistance to potential weather-related stresses.</span></p>
+                    <p><strong class="text-gray-800" data-translate="how_it_works_step4_title">4. Smart Recommendations:</strong> <span data-translate="how_it_works_step4_desc">Finally, you receive a clear, actionable list of crop recommendations, helping you maximize yield, conserve resources, and mitigate risks associated with adverse weather.</span></p>
+                </div>
+             </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="mt-16 card p-8 max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center text-blue-800 mb-2" data-translate="contact_heading">Contact Us</h2>
+            <p class="text-center text-gray-600 mb-8" data-translate="contact_subheading">Have questions or feedback? We'd love to hear from you.</p>
+            <form action="#" method="POST">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <input type="text" data-translate-placeholder="contact_name_placeholder" placeholder="Your Name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="email" data-translate-placeholder="contact_email_placeholder" placeholder="Your Email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="mt-6">
+                    <textarea data-translate-placeholder="contact_message_placeholder" placeholder="Your Message" rows="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <div class="text-center mt-6">
+                    <button type="submit" class="btn-primary font-semibold px-8 py-3 rounded-lg flex items-center justify-center space-x-2 mx-auto">
+                        <i data-lucide="send"></i>
+                        <span data-translate="contact_send_btn">Send Message</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-16">
+        <div class="container mx-auto p-8 text-center">
+            <p data-translate="footer_copyright">&copy; 2025 Weatherwise Crop Selection. All Rights Reserved.</p>
+            <p class="text-gray-400 mt-2" data-translate="footer_tagline">Helping farmers grow a sustainable future.</p>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        const getForecastBtn = document.getElementById('getForecastBtn');
+        const locationInput = document.getElementById('locationInput');
+        const resultsSection = document.getElementById('resultsSection');
+        const loader = document.getElementById('loader');
+        const forecastContent = document.getElementById('forecastContent');
+        const locationName = document.getElementById('locationName');
+        const forecastContainer = document.querySelector('#forecastContent > section:first-of-type > div');
+        const recommendedCropsList = document.getElementById('recommendedCrops');
+        const considerCropsList = document.getElementById('considerCrops');
+        const avoidCropsList = document.getElementById('avoidCrops');
+        const cropDetailsContainer = document.getElementById('cropDetailsContainer');
+        const languageSelector = document.getElementById('languageSelector');
+        
+        let currentLanguage = 'en';
+        let lastRecommendations = null;
+
+        const translations = {
+            en: {
+                title: "Weatherwise Crop Selection",
+                nav_about: "About",
+                nav_contact: "Contact",
+                intro_heading: "Empowering Farmers with AI",
+                intro_subheading: "Make data-driven decisions for your farm. Enter your location to get an AI-powered weather forecast and intelligent crop recommendations tailored to your specific conditions.",
+                get_forecast_btn: "Get Forecast",
+                forecast_heading: "2-Month AI Weather Forecast for ",
+                recommendations_heading: "AI Crop Recommendations",
+                highly_recommended: "Highly Recommended",
+                consider_planting: "Consider Planting",
+                avoid_planting: "Avoid Planting",
+                crop_details_heading: "Crop Details",
+                how_it_works_heading: "How It Works",
+                how_it_works_step1_title: "1. Data Collection:",
+                how_it_works_step1_desc: "Our system gathers vast amounts of meteorological data from global weather satellites, local stations, and historical climate patterns.",
+                how_it_works_step2_title: "2. AI Analysis:",
+                how_it_works_step2_desc: "A sophisticated machine learning model analyzes this data to generate highly accurate, localized weather forecasts, predicting temperature, rainfall, humidity, and more with exceptional precision.",
+                how_it_works_step3_title: "3. Crop Matching:",
+                how_it_works_step3_desc: "The AI then cross-references the forecast with a comprehensive database of crops, considering their ideal growing conditions, water requirements, and resistance to potential weather-related stresses.",
+                how_it_works_step4_title: "4. Smart Recommendations:",
+                how_it_works_step4_desc: "Finally, you receive a clear, actionable list of crop recommendations, helping you maximize yield, conserve resources, and mitigate risks associated with adverse weather.",
+                footer_copyright: "&copy; 2025 Weatherwise Crop Selection. All Rights Reserved.",
+                footer_tagline: "Helping farmers grow a sustainable future.",
+                crop_details_soil: "Soil Type:",
+                crop_details_water: "Water Needs:",
+                crop_details_season: "Typical Season:",
+                confidence: "Confidence:",
+                week: "Week",
+                rainy_days: "rainy days",
+                sunny_days: "sunny days",
+                contact_heading: "Contact Us",
+                contact_subheading: "Have questions or feedback? We'd love to hear from you.",
+                contact_name_placeholder: "Your Name",
+                contact_email_placeholder: "Your Email",
+                contact_message_placeholder: "Your Message",
+                contact_send_btn: "Send Message"
+            },
+            es: {
+                title: "Selección de Cultivos Weatherwise",
+                nav_about: "Sobre nosotros",
+                nav_contact: "Contacto",
+                intro_heading: "Empoderando a los Agricultores con IA",
+                intro_subheading: "Tome decisiones basadas en datos para su granja. Ingrese su ubicación para obtener un pronóstico del tiempo con IA y recomendaciones de cultivos inteligentes adaptadas a sus condiciones específicas.",
+                get_forecast_btn: "Obtener Pronóstico",
+                forecast_heading: "Pronóstico del Tiempo con IA de 2 Meses para ",
+                recommendations_heading: "Recomendaciones de Cultivos con IA",
+                highly_recommended: "Muy Recomendado",
+                consider_planting: "Considere Plantar",
+                avoid_planting: "Evite Plantar",
+                crop_details_heading: "Detalles del Cultivo",
+                how_it_works_heading: "Cómo Funciona",
+                how_it_works_step1_title: "1. Recopilación de Datos:",
+                how_it_works_step1_desc: "Nuestro sistema recopila grandes cantidades de datos meteorológicos de satélites meteorológicos globales, estaciones locales y patrones climáticos históricos.",
+                how_it_works_step2_title: "2. Análisis de IA:",
+                how_it_works_step2_desc: "Un sofisticado modelo de aprendizaje automático analiza estos datos para generar pronósticos meteorológicos localizados de alta precisión, prediciendo temperatura, lluvia, humedad y más con una precisión excepcional.",
+                how_it_works_step3_title: "3. Coincidencia de Cultivos:",
+                how_it_works_step3_desc: "La IA luego cruza el pronóstico con una base de datos completa de cultivos, considerando sus condiciones de crecimiento ideales, requisitos de agua y resistencia a posibles estreses relacionados con el clima.",
+                how_it_works_step4_title: "4. Recomendaciones Inteligentes:",
+                how_it_works_step4_desc: "Finalmente, recibe una lista clara y procesable de recomendaciones de cultivos, que le ayuda a maximizar el rendimiento, conservar los recursos y mitigar los riesgos asociados con el clima adverso.",
+                footer_copyright: "&copy; 2025 Selección de Cultivos Weatherwise. Todos los derechos reservados.",
+                footer_tagline: "Ayudando a los agricultores a cultivar un futuro sostenible.",
+                crop_details_soil: "Tipo de Suelo:",
+                crop_details_water: "Necesidades de Agua:",
+                crop_details_season: "Temporada Típica:",
+                confidence: "Confianza:",
+                week: "Semana",
+                rainy_days: "días de lluvia",
+                sunny_days: "días de sol",
+                contact_heading: "Contáctenos",
+                contact_subheading: "¿Tiene preguntas o comentarios? Nos encantaría saber de usted.",
+                contact_name_placeholder: "Tu Nombre",
+                contact_email_placeholder: "Tu Correo Electrónico",
+                contact_message_placeholder: "Tu Mensaje",
+                contact_send_btn: "Enviar Mensaje"
+            },
+            hi: {
+                title: "वेदरवाइज फसल चयन",
+                nav_about: "हमारे बारे में",
+                nav_contact: "संपर्क",
+                intro_heading: "एआई के साथ किसानों को सशक्त बनाना",
+                intro_subheading: "अपने खेत के लिए डेटा-संचालित निर्णय लें। अपनी विशिष्ट परिस्थितियों के अनुरूप एआई-संचालित मौसम पूर्वानुमान और बुद्धिमान फसल सिफारिशें प्राप्त करने के लिए अपना स्थान दर्ज करें।",
+                get_forecast_btn: "पूर्वानुमान प्राप्त करें",
+                forecast_heading: "2-महीने का एआई मौसम पूर्वानुमान ",
+                recommendations_heading: "एआई फसल सिफारिशें",
+                highly_recommended: "अत्यधिक अनुशंसित",
+                consider_planting: "रोपण पर विचार करें",
+                avoid_planting: "रोपण से बचें",
+                crop_details_heading: "फसल विवरण",
+                how_it_works_heading: "यह कैसे काम करता है",
+                how_it_works_step1_title: "1. डेटा संग्रह:",
+                how_it_works_step1_desc: "हमारा सिस्टम वैश्विक मौसम उपग्रहों, स्थानीय स्टेशनों और ऐतिहासिक जलवायु पैटर्न से बड़ी मात्रा में मौसम संबंधी डेटा एकत्र करता है।",
+                how_it_works_step2_title: "2. एआई विश्लेषण:",
+                how_it_works_step2_desc: "एक परिष्कृत मशीन लर्निंग मॉडल इस डेटा का विश्लेषण करके अत्यधिक सटीक, स्थानीयकृत मौसम पूर्वानुमान उत्पन्न करता है, जो तापमान, वर्षा, आर्द्रता और बहुत कुछ की भविष्यवाणी करता है।",
+                how_it_works_step3_title: "3. फसल मिलान:",
+                how_it_works_step3_desc: "एआई फिर पूर्वानुमान को फसलों के एक व्यापक डेटाबेस के साथ क्रॉस-रेफरेंस करता है, उनकी आदर्श बढ़ती परिस्थितियों, पानी की आवश्यकताओं और संभावित मौसम संबंधी तनावों के प्रतिरोध पर विचार करता है।",
+                how_it_works_step4_title: "4. स्मार्ट सिफारिशें:",
+                how_it_works_step4_desc: "अंत में, आपको फसल सिफारिशों की एक स्पष्ट, कार्रवाई योग्य सूची प्राप्त होती है, जो आपको उपज को अधिकतम करने, संसाधनों का संरक्षण करने और प्रतिकूल मौसम से जुड़े जोखिमों को कम करने में मदद करती है।",
+                footer_copyright: "&copy; 2025 वेदरवाइज फसल चयन। सर्वाधिकार सुरक्षित।",
+                footer_tagline: "किसानों को एक स्थायी भविष्य विकसित करने में मदद करना।",
+                crop_details_soil: "मिट्टी का प्रकार:",
+                crop_details_water: "पानी की जरूरतें:",
+                crop_details_season: "विशिष्ट मौसम:",
+                confidence: "विश्वास:",
+                week: "सप्ताह",
+                rainy_days: "बरसात के दिन",
+                sunny_days: "धूप वाले दिन",
+                contact_heading: "हमसे संपर्क करें",
+                contact_subheading: "कोई प्रश्न या प्रतिक्रिया है? हमें आपसे सुनना अच्छा लगेगा।",
+                contact_name_placeholder: "आपका नाम",
+                contact_email_placeholder: "आपका ईमेल",
+                contact_message_placeholder: "आपका संदेश",
+                contact_send_btn: "संदेश भेजें"
+            },
+            fr: {
+                title: "Sélection de cultures Weatherwise",
+                nav_about: "À propos",
+                nav_contact: "Contact",
+                intro_heading: "Autonomiser les agriculteurs avec l'IA",
+                intro_subheading: "Prenez des décisions basées sur les données pour votre exploitation. Entrez votre emplacement pour obtenir des prévisions météorologiques basées sur l'IA et des recommandations de cultures intelligentes adaptées à vos conditions spécifiques.",
+                get_forecast_btn: "Obtenir les prévisions",
+                forecast_heading: "Prévisions météo IA sur 2 mois pour ",
+                recommendations_heading: "Recommandations de cultures IA",
+                highly_recommended: "Hautement recommandé",
+                consider_planting: "Envisagez de planter",
+                avoid_planting: "Évitez de planter",
+                crop_details_heading: "Détails de la culture",
+                how_it_works_heading: "Comment ça marche",
+                how_it_works_step1_title: "1. Collecte de données:",
+                how_it_works_step1_desc: "Notre système recueille de grandes quantités de données météorologiques provenant de satellites météorologiques mondiaux, de stations locales et de modèles climatiques historiques.",
+                how_it_works_step2_title: "2. Analyse par l'IA:",
+                how_it_works_step2_desc: "Un modèle d'apprentissage automatique sophistiqué analyse ces données pour générer des prévisions météorologiques localisées très précises, prédisant la température, les précipitations, l'humidité, et plus encore avec une précision exceptionnelle.",
+                how_it_works_step3_title: "3. Correspondance des cultures:",
+                how_it_works_step3_desc: "L'IA croise ensuite les prévisions avec une base de données complète sur les cultures, en tenant compte de leurs conditions de croissance idéales, de leurs besoins en eau et de leur résistance aux stress potentiels liés aux conditions météorologiques.",
+                how_it_works_step4_title: "4. Recommandations intelligentes:",
+                how_it_works_step4_desc: "Enfin, vous recevez une liste claire et exploitable de recommandations de cultures, vous aidant à maximizar le rendement, à conserver les ressources et à atténuer les risques associés aux conditions météorologiques défavorables.",
+                footer_copyright: "&copy; 2025 Sélection de cultures Weatherwise. Tous les droits sont réservés.",
+                footer_tagline: "Aider les agriculteurs à cultiver un avenir durable.",
+                crop_details_soil: "Type de sol:",
+                crop_details_water: "Besoins en eau:",
+                crop_details_season: "Saison typique:",
+                confidence: "Confiance:",
+                week: "Semaine",
+                rainy_days: "jours de pluie",
+                sunny_days: "jours ensoleillés",
+                contact_heading: "Nous contacter",
+                contact_subheading: "Vous avez des questions ou des commentaires ? Nous aimerions avoir de vos nouvelles.",
+                contact_name_placeholder: "Votre Nom",
+                contact_email_placeholder: "Votre E-mail",
+                contact_message_placeholder: "Votre Message",
+                contact_send_btn: "Envoyer le message"
+            },
+            pt: {
+                title: "Seleção de Culturas Weatherwise",
+                nav_about: "Sobre",
+                nav_contact: "Contato",
+                intro_heading: "Capacitando Agricultores com IA",
+                intro_subheading: "Tome decisões baseadas em dados para sua fazenda. Insira sua localização para obter uma previsão do tempo com IA e recomendações inteligentes de culturas adaptadas às suas condições específicas.",
+                get_forecast_btn: "Obter Previsão",
+                forecast_heading: "Previsão do Tempo com IA de 2 Meses para ",
+                recommendations_heading: "Recomendações de Culturas com IA",
+                highly_recommended: "Altamente Recomendado",
+                consider_planting: "Considere Plantar",
+                avoid_planting: "Evite Plantar",
+                crop_details_heading: "Detalhes da Cultura",
+                how_it_works_heading: "Como Funciona",
+                how_it_works_step1_title: "1. Coleta de Dados:",
+                how_it_works_step1_desc: "Nosso sistema coleta grandes quantidades de dados meteorológicos de satélites globais, estações locais e padrões climáticos históricos.",
+                how_it_works_step2_title: "2. Análise de IA:",
+                how_it_works_step2_desc: "Um modelo sofisticado de aprendizado de máquina analisa esses dados para gerar previsões meteorológicas localizadas de alta precisão, prevendo temperatura, precipitação, umidade e muito mais com precisão excepcional.",
+                how_it_works_step3_title: "3. Correspondência de Culturas:",
+                how_it_works_step3_desc: "A IA então cruza a previsão com um banco de dados abrangente de culturas, considerando suas condições ideais de cultivo, necessidades de água e resistência a estresses climáticos potenciais.",
+                how_it_works_step4_title: "4. Recomendações Inteligentes:",
+                how_it_works_step4_desc: "Finalmente, você recebe uma lista clara e acionável de recomendações de culturas, ajudando a maximizar o rendimento, conservar recursos e mitigar riscos associados a climas adversos.",
+                footer_copyright: "&copy; 2025 Seleção de Culturas Weatherwise. Todos os direitos reservados.",
+                footer_tagline: "Ajudando os agricultores a cultivar um futuro sustentável.",
+                crop_details_soil: "Tipo de Solo:",
+                crop_details_water: "Necessidades de Água:",
+                crop_details_season: "Estação Típica:",
+                confidence: "Confiança:",
+                week: "Semana",
+                rainy_days: "dias chuvosos",
+                sunny_days: "dias de sol",
+                contact_heading: "Contate-Nos",
+                contact_subheading: "Tem perguntas ou feedback? Adoraríamos ouvir de você.",
+                contact_name_placeholder: "Seu Nome",
+                contact_email_placeholder: "Seu E-mail",
+                contact_message_placeholder: "Sua Mensagem",
+                contact_send_btn: "Enviar Mensagem"
+            },
+            ar: {
+                title: "Weatherwise لاختيار المحاصيل",
+                nav_about: "عنا",
+                nav_contact: "اتصل بنا",
+                intro_heading: "تمكين المزارعين بالذكاء الاصطناعي",
+                intro_subheading: "اتخذ قرارات تستند إلى البيانات لمزرعتك. أدخل موقعك للحصول على توقعات جوية مدعومة بالذكاء الاصطناعي وتوصيات ذكية للمحاصيل مصممة خصيصًا لظروفك.",
+                get_forecast_btn: "احصل على التوقعات",
+                forecast_heading: "توقعات الطقس بالذكاء الاصطناعي لمدة شهرين لـ ",
+                recommendations_heading: "توصيات المحاصيل بالذكاء الاصطناعي",
+                highly_recommended: "موصى به للغاية",
+                consider_planting: "فكر في الزراعة",
+                avoid_planting: "تجنب الزراعة",
+                crop_details_heading: "تفاصيل المحصول",
+                how_it_works_heading: "كيف تعمل",
+                how_it_works_step1_title: "1. جمع البيانات:",
+                how_it_works_step1_desc: "يجمع نظامنا كميات هائلة من بيانات الأرصاد الجوية من أقمار الطقس العالمية والمحطات المحلية وأنماط المناخ التاريخية.",
+                how_it_works_step2_title: "2. تحليل الذكاء الاصطناعي:",
+                how_it_works_step2_desc: "يحلل نموذج تعلم الآلة المتطور هذه البيانات لتوليد توقعات جوية محلية عالية الدقة ، ويتنبأ بدرجة الحرارة وهطول الأمطار والرطوبة والمزيد بدقة استثنائية.",
+                how_it_works_step3_title: "3. مطابقة المحاصيل:",
+                how_it_works_step3_desc: "ثم يقوم الذكاء الاصطناعي بمقارنة التوقعات بقاعدة بيانات شاملة للمحاصيل ، مع مراعاة ظروف نموها المثالية ومتطلبات المياه ومقاومة الضغوط المحتملة المتعلقة بالطقس.",
+                how_it_works_step4_title: "4. توصيات ذكية:",
+                how_it_works_step4_desc: "أخيرًا ، تتلقى قائمة واضحة وقابلة للتنفيذ بتوصيات المحاصيل ، مما يساعدك على زيادة الغلة والحفاظ على الموارد وتخفيف المخاطر المرتبطة بالطقس السيئ.",
+                footer_copyright: "&copy; 2025 Weatherwise لاختيار المحاصيل. كل الحقوق محفوظة.",
+                footer_tagline: "مساعدة المزارعين على زراعة مستقبل مستدام.",
+                crop_details_soil: "نوع التربة:",
+                crop_details_water: "احتياجات المياه:",
+                crop_details_season: "الموسم المعتاد:",
+                confidence: "ثقة:",
+                week: "أسبوع",
+                rainy_days: "أيام ممطرة",
+                sunny_days: "أيام مشمسة",
+                contact_heading: "اتصل بنا",
+                contact_subheading: "هل لديك أسئلة أو ملاحظات؟ نود أن نسمع منك.",
+                contact_name_placeholder: "اسمك",
+                contact_email_placeholder: "بريدك الإلكتروني",
+                contact_message_placeholder: "رسالتك",
+                contact_send_btn: "إرسال رسالة"
+            },
+            mr: {
+                title: "वेदरवाइज पीक निवड",
+                nav_about: "बद्दल",
+                nav_contact: "संपर्क",
+                intro_heading: "एआय सह शेतकऱ्यांना सक्षम करणे",
+                intro_subheading: "तुमच्या शेतीसाठी डेटा-आधारित निर्णय घ्या. तुमच्या विशिष्ट परिस्थितीनुसार एआय-शक्तीवर आधारित हवामान अंदाज आणि बुद्धिमान पीक शिफारसी मिळवण्यासाठी तुमचे स्थान प्रविष्ट करा.",
+                get_forecast_btn: "अंदाज मिळवा",
+                forecast_heading: "2-महिन्यांचा एआय हवामान अंदाज ",
+                recommendations_heading: "एआय पीक शिफारसी",
+                highly_recommended: "अत्यंत शिफारसीय",
+                consider_planting: "लागवडीचा विचार करा",
+                avoid_planting: "लागवड टाळा",
+                crop_details_heading: "पीक तपशील",
+                how_it_works_heading: "हे कसे कार्य करते",
+                how_it_works_step1_title: "1. डेटा संकलन:",
+                how_it_works_step1_desc: "आमची प्रणाली जागतिक हवामान उपग्रह, स्थानिक केंद्रे आणि ऐतिहासिक हवामान नमुन्यांमधून मोठ्या प्रमाणात हवामानशास्त्रीय डेटा गोळा करते.",
+                how_it_works_step2_title: "2. एआय विश्लेषण:",
+                how_it_works_step2_desc: "एक अत्याधुनिक मशीन लर्निंग मॉडेल या डेटाचे विश्लेषण करून अत्यंत अचूक, स्थानिक हवामान अंदाज तयार करते, जे तापमान, पाऊस, आर्द्रता आणि बरेच काही अपवादात्मक अचूकतेने भाकीत करते.",
+                how_it_works_step3_title: "3. पीक जुळणी:",
+                how_it_works_step3_desc: "त्यानंतर एआय हवामानाच्या अंदाजाची पिकांच्या व्यापक डेटाबेसशी तुलना करते, त्यांच्या आदर्श वाढीच्या परिस्थिती, पाण्याची आवश्यकता आणि संभाव्य हवामान-संबंधित तणावांना प्रतिकार विचारात घेते.",
+                how_it_works_step4_title: "4. स्मार्ट शिफारसी:",
+                how_it_works_step4_desc: "शेवटी, तुम्हाला पीक शिफारसींची एक स्पष्ट, कृती करण्यायोग्य यादी मिळते, जी तुम्हाला उत्पन्न वाढविण्यात, संसाधने वाचविण्यात आणि प्रतिकूल हवामानाशी संबंधित धोके कमी करण्यास मदत करते.",
+                footer_copyright: "&copy; 2025 वेदरवाइज पीक निवड. सर्व हक्क राखीव.",
+                footer_tagline: "शेतकऱ्यांना शाश्वत भविष्य घडविण्यात मदत करणे.",
+                crop_details_soil: "मातीचा प्रकार:",
+                crop_details_water: "पाण्याची गरज:",
+                crop_details_season: "विशिष्ट हंगाम:",
+                confidence: "आत्मविश्वास:",
+                week: "आठवडा",
+                rainy_days: "पावसाचे दिवस",
+                sunny_days: "उन्हाचे दिवस",
+                contact_heading: "आमच्याशी संपर्क साधा",
+                contact_subheading: "प्रश्न किंवा अभिप्राय आहे? आम्हाला तुमच्याकडून ऐकायला आवडेल.",
+                contact_name_placeholder: "तुमचे नाव",
+                contact_email_placeholder: "तुमचा ईमेल",
+                contact_message_placeholder: "तुमचा संदेश",
+                contact_send_btn: "संदेश पाठवा"
+            },
+            ja: {
+                title: "ウェザーワイズ作物選択",
+                nav_about: "概要",
+                nav_contact: "お問い合わせ",
+                intro_heading: "AIで農家を支援",
+                intro_subheading: "あなたの農場のためにデータに基づいた意思決定を行ってください。あなたの特定の状況に合わせたAIによる天気予報とインテリジェントな作物の推奨事項を得るために、あなたの場所を入力してください。",
+                get_forecast_btn: "予報を取得",
+                forecast_heading: "2ヶ月間のAI天気予報 ",
+                recommendations_heading: "AIによる作物の推奨",
+                highly_recommended: "強く推奨",
+                consider_planting: "植え付けを検討",
+                avoid_planting: "植え付けを避ける",
+                crop_details_heading: "作物の詳細",
+                how_it_works_heading: "仕組み",
+                how_it_works_step1_title: "1. データ収集：",
+                how_it_works_step1_desc: "私たちのシステムは、世界の気象衛星、地域の観測所、および過去の気候パターンから膨大な量の気象データを収集します。",
+                how_it_works_step2_title: "2. AI分析：",
+                how_it_works_step2_desc: "高度な機械学習モデルがこのデータを分析し、非常に正確でローカライズされた天気予報を生成し、気温、降雨量、湿度などを卓越した精度で予測します。",
+                how_it_works_step3_title: "3. 作物のマッチング：",
+                how_it_works_step3_desc: "次に、AIは予報と作物の包括的なデータベースを照合し、それらの理想的な生育条件、水分要件、および潜在的な天候関連のストレスに対する耐性を考慮します。",
+                how_it_works_step4_title: "4. スマートな推奨事項：",
+                how_it_works_step4_desc: "最後に、作物の推奨事項の明確で実行可能なリストを受け取り、収量を最大化し、資源を節約し、悪天候に関連するリスクを軽減するのに役立ちます。",
+                footer_copyright: "&copy; 2025 ウェザーワイズ作物選択. 全著作権所有。",
+                footer_tagline: "農家が持続可能な未来を育むのを助ける。",
+                crop_details_soil: "土壌タイプ：",
+                crop_details_water: "水の必要量：",
+                crop_details_season: "典型的な季節：",
+                confidence: "信頼度：",
+                week: "週",
+                rainy_days: "雨の日",
+                sunny_days: "晴れの日",
+                contact_heading: "お問い合わせ",
+                contact_subheading: "ご質問やご意見がありますか？ぜひお聞かせください。",
+                contact_name_placeholder: "あなたの名前",
+                contact_email_placeholder: "あなたのメールアドレス",
+                contact_message_placeholder: "あなたのメッセージ",
+                contact_send_btn: "メッセージを送信"
+            }
+        };
+
+        const cropDatabase = {
+            millet: {
+                image: "https://placehold.co/400x300/a3e635/4d7c0f?text=Millet+Field",
+                details: { soil: "Well-drained sandy loams", water: "Low; very drought resistant", season: "Kharif (Monsoon)" },
+                en: { name: "Millet (Bajra)", reason: "Excellent drought tolerance, ideal for the predicted dry spells and high temperatures." },
+                es: { name: "Mijo (Bajra)", reason: "Excelente tolerancia a la sequía, ideal para los períodos secos y las altas temperaturas previstas." },
+                hi: { name: "बाजरा", reason: "उत्कृष्ट सूखा सहनशीलता, अनुमानित शुष्क काल और उच्च तापमान के लिए आदर्श।"},
+                fr: { name: "Millet (Bajra)", reason: "Excellente tolérance à la sécheresse, idéale pour les périodes de sécheresse et les températures élevées prévues." },
+                pt: { name: "Milheto (Bajra)", reason: "Excelente tolerância à seca, ideal para os períodos de seca previstos e altas temperaturas." },
+                ar: { name: "الدخن (باجرا)", reason: "قدرة ممتازة على تحمل الجفاف ، مثالية لموجات الجفاف المتوقعة ودرجات الحرارة المرتفعة." },
+                mr: { name: "बाजरी", reason: "उत्कृष्ट दुष्काळ सहनशीलता, अंदाजित कोरड्या कालावधीसाठी आणि उच्च तापमानासाठी आदर्श." },
+                ja: { name: "キビ（バジュラ）", reason: "優れた耐乾性、予測される乾燥期間と高温に最適です。" }
+            },
+            soybean: {
+                image: "https://placehold.co/400x300/facc15/b45309?text=Soybean+Plants",
+                details: { soil: "Loamy soil with good drainage", water: "Moderate", season: "Kharif (Monsoon)" },
+                en: { name: "Soybean", reason: "Thrives in warm conditions with moderate rainfall, matching the forecast." },
+                es: { name: "Soja", reason: "Prospera en condiciones cálidas con lluvias moderadas, coincidiendo con el pronóstico." },
+                hi: { name: "सोयाबीन", reason: "मध्यम वर्षा के साथ गर्म परिस्थितियों में पनपता है, जो पूर्वानुमान से मेल खाता है।"},
+                fr: { name: "Soja", reason: "Prospère dans des conditions chaudes avec des précipitations modérées, correspondant aux prévisions." },
+                pt: { name: "Soja", reason: "Prospera em condições quentes com chuvas moderadas, correspondendo à previsão." },
+                ar: { name: "فول الصويا", reason: "يزدهر في الظروف الدافئة مع هطول أمطار معتدلة ، بما يتوافق مع التوقعات." },
+                mr: { name: "सोयाबीन", reason: "मध्यम पावसासह उष्ण परिस्थितीत वाढते, जे हवामानाच्या अंदाजाशी जुळते." },
+                ja: { name: "大豆", reason: "予報と一致する、適度な降雨のある暖かい条件で繁栄します。" }
+            },
+            chickpea: {
+                image: "https://placehold.co/400x300/60a5fa/1e40af?text=Chickpeas",
+                details: { soil: "Light to heavy black soils", water: "Low; requires less water", season: "Rabi (Winter)" },
+                en: { name: "Chickpea (Gram)", reason: "Prefers cooler, drier conditions. A good choice for post-monsoon planting if rain is minimal." },
+                es: { name: "Garbanzo (Gram)", reason: "Prefiere condiciones más frescas y secas. Una buena opción para la siembra posterior al monzón si la lluvia es mínima." },
+                hi: { name: "चना", reason: "ठंडी, शुष्क परिस्थितियों को तरजीह देता है। यदि वर्षा न्यूनतम हो तो मानसून के बाद की बुवाई के लिए एक अच्छा विकल्प है।"},
+                fr: { name: "Pois chiche (Gram)", reason: "Préfère des conditions plus fraîches et plus sèches. Un bon choix pour les semis post-mousson si les pluies sont minimes." },
+                pt: { name: "Grão de bico (Gram)", reason: "Prefere condições mais frias e secas. Uma boa escolha para o plantio pós-monção se a chuva for mínima." },
+                ar: { name: "الحمص (جرام)", reason: "يفضل الظروف الباردة والجافة. خيار جيد للزراعة بعد الرياح الموسمية إذا كان المطر ضئيلاً." },
+                mr: { name: "हरभरा", reason: "थंड, कोरड्या परिस्थितीला प्राधान्य देते. पाऊस कमी असल्यास मान्सूननंतरच्या लागवडीसाठी चांगला पर्याय." },
+                ja: { name: "ひよこ豆（グラム）", reason: "より涼しく乾燥した条件を好みます。雨が最小限であれば、モンスーン後の植え付けに適しています。" }
+            },
+            cotton: {
+                image: "https://placehold.co/400x300/e5e7eb/374151?text=Cotton+Boll",
+                details: { soil: "Black cotton soil", water: "Moderate, but sensitive to waterlogging", season: "Kharif (Monsoon)"},
+                en: { name: "Cotton", reason: "Needs consistent sun and warmth, but susceptible to damage from sudden heavy downpours." },
+                es: { name: "Algodón", reason: "Necesita sol y calor constantes, pero es susceptible a daños por aguaceros repentinos." },
+                hi: { name: "कपास", reason: "लगातार धूप और गर्मी की आवश्यकता है, लेकिन अचानक भारी बारिश से नुकसान होने का खतरा है।"},
+                fr: { name: "Coton", reason: "A besoin d'un soleil et d'une chaleur constants, mais est sensible aux dommages causés par de fortes averses soudaines." },
+                pt: { name: "Algodão", reason: "Precisa de sol e calor consistentes, mas é suscetível a danos por chuvas fortes e repentinas." },
+                ar: { name: "قطن", reason: "يحتاج إلى شمس ودفء ثابتين ، ولكنه عرضة للتلف من الأمطار الغزيرة المفاجئة." },
+                mr: { name: "कापूस", reason: "सतत सूर्यप्रकाश आणि उष्णतेची आवश्यकता असते, परंतु अचानक मुसळधार पावसामुळे नुकसान होण्याची शक्यता असते." },
+                ja: { name: "綿", reason: "一貫した日光と暖かさが必要ですが、突然の豪雨による被害を受けやすいです。" }
+            },
+            rice: {
+                image: "https://placehold.co/400x300/22c55e/14532d?text=Rice+Paddy",
+                details: { soil: "Clayey loam", water: "High; needs standing water", season: "Kharif (Monsoon)" },
+                en: { name: "Rice", reason: "Requires significant and consistent water supply, which is not guaranteed in the forecast." },
+                es: { name: "Arroz", reason: "Requiere un suministro de agua significativo y constante, que no está garantizado en el pronóstico." },
+                hi: { name: "चावल", reason: "महत्वपूर्ण और लगातार पानी की आपूर्ति की आवश्यकता है, जो पूर्वानुमान में गारंटी नहीं है।"},
+                fr: { name: "Riz", reason: "Nécessite un approvisionnement en eau important et constant, ce qui n'est pas garanti dans les prévisions." },
+                pt: { name: "Arroz", reason: "Requer um fornecimento de água significativo e consistente, o que não é garantido na previsão." },
+                ar: { name: "أرز", reason: "يتطلب إمدادات مياه كبيرة ومتسقة ، وهو أمر غير مضمون في التوقعات." },
+                mr: { name: "भात", reason: "महत्वपूर्ण आणि सातत्यपूर्ण पाणीपुरवठ्याची आवश्यकता आहे, जे हवामानाच्या अंदाजात हमी नाही." },
+                ja: { name: "米", reason: "重要かつ一貫した給水が必要ですが、予報では保証されていません。" }
+            },
+            sugarcane: {
+                image: "https://placehold.co/400x300/86efac/15803d?text=Sugarcane",
+                details: { soil: "Heavy soils, well-drained", water: "Very High", season: "Annual crop"},
+                en: { name: "Sugarcane", reason: "High water requirement makes it risky with a forecast of inconsistent, light rain." },
+                es: { name: "Caña de azúcar", reason: "El alto requerimiento de agua lo hace arriesgado con un pronóstico de lluvia ligera e inconsistente." },
+                hi: { name: "गन्ना", reason: "असंगत, हल्की बारिश के पूर्वानुमान के साथ उच्च पानी की आवश्यकता इसे जोखिम भरा बनाती है।"},
+                fr: { name: "Canne à sucre", reason: "Une forte demande en eau le rend risqué avec des prévisions de pluies légères et irrégulières." },
+                pt: { name: "Cana-de-açúcar", reason: "A alta necessidade de água o torna arriscado com uma previsão de chuva leve e inconsistente." },
+                ar: { name: "قصب السكر", reason: "متطلبات المياه العالية تجعله محفوفًا بالمخاطر مع توقع هطول أمطار خفيفة وغير متسقة." },
+                mr: { name: "ऊस", reason: "जास्त पाण्याची गरज असल्यामुळे विसंगत, हलक्या पावसाच्या अंदाजामुळे धोकादायक ठरते." },
+                ja: { name: "サトウキビ", reason: "高い水分要件のため、一貫性のない小雨の予報ではリスクが高まります。" }
+            },
+            wheat: {
+                image: "https://placehold.co/400x300/f59e0b/92400e?text=Wheat+Field",
+                details: { soil: "Clay loam or loamy", water: "Moderate, requires timely irrigation", season: "Rabi (Winter)" },
+                en: { name: "Wheat", reason: "Ideal for cooler, post-monsoon temperatures with moderate water needs." },
+                es: { name: "Trigo", reason: "Ideal para temperaturas más frescas posteriores al monzón con necesidades moderadas de agua." },
+                hi: { name: "गेहूँ", reason: "मध्यम पानी की जरूरतों के साथ मानसून के बाद के ठंडे तापमान के लिए आदर्श।"},
+                fr: { name: "Blé", reason: "Idéal pour les températures plus fraîches post-mousson avec des besoins en eau modérés." },
+                pt: { name: "Trigo", reason: "Ideal para temperaturas mais frias pós-monção com necessidades moderadas de água." },
+                ar: { name: "قمح", reason: "مثالي لدرجات الحرارة الباردة بعد الرياح الموسمية مع احتياجات مياه معتدلة." },
+                mr: { name: "गहू", reason: "मध्यम पाण्याच्या गरजेसह मान्सूननंतरच्या थंड तापमानासाठी आदर्श." },
+                ja: { name: "小麦", reason: "適度な水分需要があり、モンスーン後の涼しい気温に最適です。" }
+            },
+            mustard: {
+                image: "https://placehold.co/400x300/fde047/ca8a04?text=Mustard+Flowers",
+                details: { soil: "Light to heavy sandy loam", water: "Low to Moderate", season: "Rabi (Winter)" },
+                en: { name: "Mustard", reason: "Requires cool conditions and is relatively drought-tolerant, suitable for the upcoming season." },
+                es: { name: "Mostaza", reason: "Requiere condiciones frescas y es relativamente tolerante a la sequía, adecuada para la próxima temporada." },
+                hi: { name: "सरसों", reason: "ठंडी परिस्थितियों की आवश्यकता है और यह अपेक्षाकृत सूखा-सहिष्णु है, जो आगामी सीजन के लिए उपयुक्त है।"},
+                fr: { name: "Moutarde", reason: "Nécessite des conditions fraîches et est relatively tolérante à la sécheresse, adaptée à la saison à venir." },
+                pt: { name: "Mostarda", reason: "Requer condições frescas e é relativamente tolerante à seca, adequada para a próxima temporada." },
+                ar: { name: "خردل", reason: "يتطلب ظروفًا باردة وهو مقاوم للجفاف نسبيًا ، وهو مناسب للموسم القادم." },
+                mr: { name: "मोहरी", reason: "थंड परिस्थितीची आवश्यकता असते आणि ते तुलनेने दुष्काळ-सहिष्णु आहे, जे आगामी हंगामासाठी योग्य आहे." },
+                ja: { name: "マスタード", reason: "涼しい条件が必要で、比較的干ばつに強いため、次のシーズンに適しています。" }
+            }
+        };
+
+        languageSelector.addEventListener('change', (e) => {
+            changeLanguage(e.target.value);
+        });
+
+        function changeLanguage(lang) {
+            currentLanguage = lang;
+            const translation = translations[lang];
+            if (!translation) return;
+
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                if (translation[key]) {
+                    el.innerHTML = translation[key];
+                }
+                const placeholderKey = el.getAttribute('data-translate-placeholder');
+                if (placeholderKey && translation[placeholderKey]) {
+                    el.placeholder = translation[placeholderKey];
+                }
+            });
+            
+            if (lastRecommendations) {
+                displayRecommendations(lastRecommendations);
+                // Also need to re-render forecast for week text translation
+                const mockForecast = generateMockForecast(); // Re-use the generation logic to have something to display
+                displayForecast(mockForecast);
+
+            }
+        }
+
+        getForecastBtn.addEventListener('click', () => {
+            const location = locationInput.value;
+            if (!location) {
+                alert("Please enter a location.");
+                return;
+            }
+
+            resultsSection.classList.remove('hidden');
+            loader.classList.remove('hidden');
+            forecastContent.classList.add('hidden');
+            locationName.textContent = location;
+
+            setTimeout(() => {
+                const mockForecast = generateMockForecast();
+                const recommendations = getAIRecommendations(mockForecast);
+                lastRecommendations = recommendations;
+                
+                displayForecast(mockForecast);
+                displayRecommendations(recommendations);
+
+                loader.classList.add('hidden');
+                forecastContent.classList.remove('hidden');
+
+            }, 2000);
+        });
+
+        function generateMockForecast() {
+            let forecast = [];
+            for (let i = 0; i < 60; i++) { // Generate 60 days of data
+                const isRainy = Math.random() > 0.5;
+                forecast.push({
+                    temp: Math.floor(Math.random() * 8) + 25,
+                    humidity: Math.floor(Math.random() * 25) + 60,
+                    precipitation: isRainy ? Math.floor(Math.random() * 50) + 30 : Math.floor(Math.random() * 15),
+                    wind: Math.floor(Math.random() * 10) + 5,
+                    icon: isRainy ? 'cloud-rain' : 'sun'
+                });
+            }
+            return forecast;
+        }
+        
+        function getAIRecommendations(forecast) {
+            const analysis = {
+                avgTemp: forecast.reduce((acc, day) => acc + day.temp, 0) / forecast.length,
+                maxTemp: Math.max(...forecast.map(day => day.temp)),
+                minTemp: Math.min(...forecast.map(day => day.temp)),
+                totalPrecipitation: forecast.reduce((acc, day) => acc + day.precipitation, 0),
+                rainyDays: forecast.filter(day => day.precipitation > 40).length,
+                dryDays: forecast.filter(day => day.precipitation < 20).length,
+                sunnyDays: forecast.filter(day => day.icon === 'sun').length
+            };
+
+            let recs = { recommended: [], consider: [], avoid: [] };
+            const allCrops = Object.values(cropDatabase);
+
+            allCrops.forEach(crop => {
+                let score = 50;
+                const cropName = crop.en.name.toLowerCase();
+
+                if (cropName.includes('millet')) {
+                    if (analysis.avgTemp > 27) score += 20;
+                    if (analysis.rainyDays < (forecast.length / 3)) score += 25;
+                    if (analysis.maxTemp > 32) score += 10;
+                    if (analysis.totalPrecipitation < (forecast.length * 20)) score += 15;
+                    else score -= 20;
+                } else if (cropName.includes('soybean')) {
+                    if (analysis.avgTemp > 25 && analysis.avgTemp < 32) score += 20;
+                    if (analysis.rainyDays > (forecast.length / 4) && analysis.rainyDays < (forecast.length / 2)) score += 25;
+                    if (analysis.dryDays < (forecast.length / 2)) score += 10;
+                } else if (cropName.includes('chickpea') || cropName.includes('mustard') || cropName.includes('wheat')) {
+                    if (analysis.avgTemp < 26) score += 30;
+                    else if (analysis.avgTemp > 30) score -= 40;
+                    if (analysis.rainyDays < (forecast.length / 3)) score += 20;
+                    if (analysis.sunnyDays > (forecast.length / 2)) score += 15;
+                } else if (cropName.includes('cotton')) {
+                    if (analysis.sunnyDays > (forecast.length / 2)) score += 25;
+                    if (analysis.maxTemp < 35) score += 15;
+                    if (analysis.rainyDays > (forecast.length / 2)) score -= 30;
+                } else if (cropName.includes('rice')) {
+                    if (analysis.rainyDays > (forecast.length / 2)) score += 30;
+                    else score -= 40;
+                    if (analysis.totalPrecipitation > (forecast.length * 30)) score += 25;
+                    else score -= 30;
+                    if (analysis.avgTemp > 24) score += 10;
+                } else if (cropName.includes('sugarcane')) {
+                    if (analysis.rainyDays > (forecast.length / 2)) score += 20;
+                    if (analysis.totalPrecipitation > (forecast.length * 25)) score += 20;
+                    if (analysis.dryDays > (forecast.length / 3)) score -= 50;
+                }
+                
+                const result = { ...crop, confidence: Math.min(Math.max(Math.round(score), 5), 99) };
+                if (score >= 80) {
+                    recs.recommended.push(result);
+                } else if (score >= 50) {
+                    recs.consider.push(result);
+                } else {
+                    recs.avoid.push(result);
+                }
+            });
+
+            recs.recommended.sort((a, b) => b.confidence - a.confidence);
+            recs.consider.sort((a, b) => b.confidence - a.confidence);
+            recs.avoid.sort((a, b) => a.confidence - b.confidence);
+
+            return recs;
+        }
+
+        function displayForecast(forecast) {
+            forecastContainer.innerHTML = '';
+            const weeklyForecasts = [];
+            for (let i = 0; i < forecast.length; i += 7) {
+                weeklyForecasts.push(forecast.slice(i, i + 7));
+            }
+
+            const detailsLang = translations[currentLanguage] || translations['en'];
+
+            weeklyForecasts.forEach((week, index) => {
+                if (week.length === 0) return;
+
+                const weekNumber = index + 1;
+                const minTemp = Math.min(...week.map(day => day.temp));
+                const maxTemp = Math.max(...week.map(day => day.temp));
+                const rainyDays = week.filter(day => day.icon === 'cloud-rain').length;
+                const sunnyDays = week.length - rainyDays;
+                const dominantIcon = rainyDays > sunnyDays ? 'cloud-rain' : 'sun';
+                const iconColor = dominantIcon === 'sun' ? 'text-yellow-500' : 'text-blue-500';
+                
+                const weekText = detailsLang.week || "Week";
+
+                const weekCard = `
+                    <div class="card p-4 flex flex-col items-center space-y-2">
+                        <p class="font-bold text-lg">${weekText} ${weekNumber}</p>
+                        <i data-lucide="${dominantIcon}" class="w-10 h-10 ${iconColor}"></i>
+                        <p class="text-xl font-semibold">${minTemp}°-${maxTemp}°C</p>
+                        <div class="text-xs text-gray-500 space-y-1 text-left">
+                            <p>💧 ${rainyDays} ${detailsLang.rainy_days}</p>
+                            <p>☀️ ${sunnyDays} ${detailsLang.sunny_days}</p>
+                        </div>
+                    </div>
+                `;
+                forecastContainer.innerHTML += weekCard;
+            });
+            lucide.createIcons();
+        }
+
+        function displayRecommendations(recommendations) {
+            recommendedCropsList.innerHTML = '';
+            considerCropsList.innerHTML = '';
+            avoidCropsList.innerHTML = '';
+            cropDetailsContainer.innerHTML = '';
+
+            recommendations.recommended.forEach(crop => {
+                const cropLang = crop[currentLanguage] || crop['en'];
+                const detailsLang = translations[currentLanguage] || translations['en'];
+                recommendedCropsList.innerHTML += `
+                    <li class="p-3 bg-green-50 rounded-lg">
+                        <div class="flex justify-between items-start">
+                             <p class="font-semibold text-gray-800">${cropLang.name}</p>
+                             <span class="text-xs font-bold text-green-800">${detailsLang.confidence} ${crop.confidence}%</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">${cropLang.reason}</p>
+                    </li>
+                `;
+            });
+
+            recommendations.consider.forEach(crop => {
+                const cropLang = crop[currentLanguage] || crop['en'];
+                 const detailsLang = translations[currentLanguage] || translations['en'];
+                considerCropsList.innerHTML += `
+                    <li class="p-3 bg-yellow-50 rounded-lg">
+                        <div class="flex justify-between items-start">
+                             <p class="font-semibold text-gray-800">${cropLang.name}</p>
+                             <span class="text-xs font-bold text-yellow-800">${detailsLang.confidence} ${crop.confidence}%</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">${cropLang.reason}</p>
+                    </li>
+                `;
+            });
+            
+             recommendations.avoid.forEach(crop => {
+                const cropLang = crop[currentLanguage] || crop['en'];
+                const detailsLang = translations[currentLanguage] || translations['en'];
+                avoidCropsList.innerHTML += `
+                    <li class="p-3 bg-red-50 rounded-lg">
+                        <div class="flex justify-between items-start">
+                             <p class="font-semibold text-gray-800">${cropLang.name}</p>
+                             <span class="text-xs font-bold text-red-800">${detailsLang.confidence} ${crop.confidence}%</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">${cropLang.reason}</p>
+                    </li>
+                `;
+            });
+            
+            const detailedCrops = [...recommendations.recommended, ...recommendations.consider];
+            const uniqueDetailedCrops = Array.from(new Set(detailedCrops.map(c => c.en.name)))
+                .map(name => {
+                    return detailedCrops.find(c => c.en.name === name)
+                });
+
+            uniqueDetailedCrops.forEach(crop => {
+                const cropLang = crop[currentLanguage] || crop['en'];
+                const detailsLang = translations[currentLanguage] || translations['en'];
+                cropDetailsContainer.innerHTML += `
+                    <div class="card overflow-hidden">
+                        <img src="${crop.image}" alt="${cropLang.name}" class="w-full h-40 object-cover">
+                        <div class="p-4">
+                            <h5 class="text-lg font-bold">${cropLang.name}</h5>
+                            <ul class="text-sm text-gray-600 mt-2 space-y-1">
+                                <li><strong>${detailsLang.crop_details_soil}</strong> ${crop.details.soil}</li>
+                                <li><strong>${detailsLang.crop_details_water}</strong> ${crop.details.water}</li>
+                                <li><strong>${detailsLang.crop_details_season}</strong> ${crop.details.season}</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
+
+
+
